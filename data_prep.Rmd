@@ -17,6 +17,8 @@ ffseason = read_csv("~/Desktop/GBPredictions/final_submission/fantasy_football_p
 ffw1 = read_csv("~/Desktop/GBPredictions/final_submission/fantasy_football_project/GrapebowlW1Projections.csv")
 
 ffw2 = read_csv("~/Desktop/GBPredictions/final_submission/fantasy_football_project/GrapebowlW2Projections.csv")
+
+ffw3 = read_csv("~/Desktop/GBPredictions/final_submission/fantasy_football_project/GrapebowlW3Projections.csv")
 ```
 
 # Cleaning the different data sets and aggregating into one table
@@ -39,80 +41,84 @@ ffseason = ffseason %>% unite(name, c(first_name, last_name), sep = " ",
 ffw1 = subset(ffw1, points > 0, select = c(id, avg_type, points, pos_rank, 
                                            floor, ceiling, pos_ecr, risk))
 
-ffw1 = setnames(ffw1, old = c("points", "pos_rank", "floor", "ceiling", 
-                              "pos_ecr", "risk"), new = c("points_w1", 
-                                                          "pos_rank_w1", 
-                                                          "floor_w1", "ceiling_w1", 
-                                                          "pos_ecr_w1", 
-                                                          "risk_w1"))
+ffw1 = setnames(ffw1, 
+                old = c("points", "pos_rank", "floor", "ceiling", "pos_ecr", "risk"),
+                new = c("points_w1", "pos_rank_w1", "floor_w1", "ceiling_w1",
+                        "pos_ecr_w1", "risk_w1"))
 
 ffw2 = subset(ffw2, points > 0, select = c(id, avg_type, points, pos_rank, 
                                            floor, ceiling, pos_ecr, risk))
 
-ffw2 = setnames(ffw2, old = c("points", "pos_rank", "floor", "ceiling", 
-                              "pos_ecr", "risk"), new = c("points_w2", 
-                                                          "pos_rank_w2", 
-                                                          "floor_w2", 
-                                                          "ceiling_w2", 
-                                                          "pos_ecr_w2", "risk_w2"))
+ffw2 = setnames(ffw2, 
+                old = c("points", "pos_rank", "floor", "ceiling", "pos_ecr", "risk"),
+                new = c("points_w2", "pos_rank_w2", "floor_w2", "ceiling_w2", 
+                        "pos_ecr_w2", "risk_w2"))
+
+ffw3 = subset(ffw3, points > 0, select = c(id, avg_type, points, pos_rank, 
+                                           floor, ceiling, pos_ecr, risk))
+
+ffw3 = setnames(ffw3, 
+                old = c("points", "pos_rank", "floor", "ceiling", "pos_ecr", "risk"),
+                new = c("points_w3", "pos_rank_w3", "floor_w3", "ceiling_w3",
+                        "pos_ecr_w3", "risk_w3"))
 
 master_ff = left_join(ffseason, ffw1, by = c("id", "avg_type"))
 
 master_ff = left_join(master_ff, ffw2, by = c("id", "avg_type"))
 
+master_ff = left_join(master_ff, ffw3, by = c("id", "avg_type"))
+
 master_ff$floorpg_w0 = master_ff$floor_w0/16
 
 master_ff$ceilingpg_w0 = master_ff$ceiling_w0/16
 
-robust_ff = subset(master_ff, avg_type == "robust" & pos %in% c("QB", 
-                                                                "RB", 
-                                                                "WR", 
-                                                                "TE") & team != "FA", 
-                   select = c(id, name, team, pos, exp, age, adp, pointspg_w0, 
-                              pos_rank_w0, floorpg_w0, ceilingpg_w0, pos_ecr_w0, 
-                              risk_w0, points_w1, pos_rank_w1, floor_w1, ceiling_w1, 
-                              pos_ecr_w1, risk_w1, points_w2, pos_rank_w2, floor_w2, 
-                              ceiling_w2, pos_ecr_w2, risk_w2))
+robust_ff = subset(master_ff, 
+                   avg_type == "robust" & pos %in% c("QB", "RB", "WR", "TE") & team != "FA", 
+                   select = c(id, name, team, pos, exp, age, adp, 
+                              pointspg_w0, pos_rank_w0, floorpg_w0, ceilingpg_w0, pos_ecr_w0, risk_w0, 
+                              points_w1, pos_rank_w1, floor_w1, ceiling_w1, pos_ecr_w1, risk_w1, 
+                              points_w2, pos_rank_w2, floor_w2, ceiling_w2, pos_ecr_w2, risk_w2, 
+                              points_w3, pos_rank_w3, floor_w3, ceiling_w3, pos_ecr_w3, risk_w3))
 
-robust_ff$id = factor(robust_ff$id)
-
-kc1 = "week"
-valc1 = "projected_points"
-gathc1 = c("pointspg_w0", "points_w1", "points_w2")
-
-kc2 = "week_rank"
-valc2 = "position_rank"
-gathc2 = c("pos_rank_w0", "pos_rank_w1", "pos_rank_w2")
-
-kc3 = "week_ecr"
-valc3 = "ecr"
-gathc3 = c("pos_ecr_w0", "pos_ecr_w1", "pos_ecr_w2")
-
-kc4 = "week_risk"
-valc4 = "risk"
-gathc4 = c("risk_w0", "risk_w1", "risk_w2")
-
-kc5 = "week_floor"
-valc5 = "floor"
-gathc5 = c("floorpg_w0", "floor_w1", "floor_w2")
-
-kc6 = "week_ceiling"
-valc6 = "ceiling"
-gathc6 = c("ceilingpg_w0", "ceiling_w1", "ceiling_w2")
-
-
-robust_ff_long = gather_(robust_ff, key = kc1, value = valc1, gathc1, 
-                         factor_key=TRUE)
-
-robust_ff_long = gather_(robust_ff_long, kc2, valc2, gathc2, factor_key=TRUE)
-
-robust_ff_long = gather_(robust_ff_long, kc3, valc3, gathc3, factor_key=TRUE)
-
-robust_ff_long = gather_(robust_ff_long, kc4, valc4, gathc4, factor_key=TRUE)
-
-robust_ff_long = gather_(robust_ff_long, kc5, valc5, gathc5, factor_key=TRUE)
-
-robust_ff_long = gather_(robust_ff_long, kc6, valc6, gathc6, factor_key=TRUE)
+# robust_ff$id = factor(robust_ff$id)
+# 
+# kc1 = "week"
+# valc1 = "projected_points"
+# gathc1 = c("pointspg_w0", "points_w1", "points_w2")
+# 
+# kc2 = "week_rank"
+# valc2 = "position_rank"
+# gathc2 = c("pos_rank_w0", "pos_rank_w1", "pos_rank_w2")
+# 
+# kc3 = "week_ecr"
+# valc3 = "ecr"
+# gathc3 = c("pos_ecr_w0", "pos_ecr_w1", "pos_ecr_w2")
+# 
+# kc4 = "week_risk"
+# valc4 = "risk"
+# gathc4 = c("risk_w0", "risk_w1", "risk_w2")
+# 
+# kc5 = "week_floor"
+# valc5 = "floor"
+# gathc5 = c("floorpg_w0", "floor_w1", "floor_w2")
+# 
+# kc6 = "week_ceiling"
+# valc6 = "ceiling"
+# gathc6 = c("ceilingpg_w0", "ceiling_w1", "ceiling_w2")
+# 
+# 
+# robust_ff_long = gather_(robust_ff, key = kc1, value = valc1, gathc1, 
+#                          factor_key=TRUE)
+# 
+# robust_ff_long = gather_(robust_ff_long, kc2, valc2, gathc2, factor_key=TRUE)
+# 
+# robust_ff_long = gather_(robust_ff_long, kc3, valc3, gathc3, factor_key=TRUE)
+# 
+# robust_ff_long = gather_(robust_ff_long, kc4, valc4, gathc4, factor_key=TRUE)
+# 
+# robust_ff_long = gather_(robust_ff_long, kc5, valc5, gathc5, factor_key=TRUE)
+# 
+# robust_ff_long = gather_(robust_ff_long, kc6, valc6, gathc6, factor_key=TRUE)
 ```
 
 #write the data out for Analysis file
@@ -123,6 +129,6 @@ write_csv(master_ff, "~/Desktop/GBPredictions/final_submission/fantasy_football_
 
 write_csv(robust_ff, "~/Desktop/GBPredictions/final_submission/fantasy_football_project/robust_ff_wide.csv")
 
-write_csv(robust_ff_long, "~/Desktop/GBPredictions/final_submission/fantasy_football_project/robust_ff_long.csv")
+#write_csv(robust_ff_long, "~/Desktop/GBPredictions/final_submission/fantasy_football_project/robust_ff_long.csv")
 ```
 

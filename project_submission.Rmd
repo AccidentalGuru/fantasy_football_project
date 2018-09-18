@@ -1,18 +1,176 @@
----
-title: "FF Analytics for NFL 2018 Season"
-author: "Sandeep Mohan"
-output: html_document
----
+Fantasy Football Analysis by Sandeep Mohan
+========================================================
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
 
-```{r}
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(ggthemes)
+library(markdown)
+library(rmarkdown)
+library(knitr)
+library(RColorBrewer)
+library(gridExtra)
+library(reshape2)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, dataset load}
 robust_df = read.csv("~/Desktop/GBPredictions/final_submission/fantasy_football_project/robust_ff_wide.csv")
 
 master_df = read.csv("~/Desktop/GBPredictions/final_submission/fantasy_football_project/master_ff.csv")
 ```
 
 
-```{r echo=FALSE,message=FALSE, warning=FALSE}
-ggcorr(robust_ff_long)
+> **Introduction to the Dataset and Analysis Goals**: TBD
+
+
+```{r echo=FALSE,message=FALSE, warning=FALSE, correlation heat map}
+ggcorr(robust_df)
 ```
+
+# Univariate Plots Section
+
+>**Age of players**:The overwhelming majority of active NFL players are below 30 
+as expected though wide receivers (WR) and quarterbacks (QB) can have longer careers. 
+As the top left histogram in the charts below shows Tom Brady of the NE Patriots 
+is in a league of his own...
+
+>The dotted line shows the median age of players by position while the dashed line
+indicated the 99th percentile.
+
+>Given that the versatile Tom Brady as a QB also needs to sometimes run the ball 
+himself, his elite performance thus far is phenomenal
+
+```{r echo=FALSE,message=FALSE, warning=FALSE}
+
+ggplot(robust_df, aes(x=age, color=pos, fill = pos)) +
+  geom_histogram(alpha=0.6, position="identity", bins = 20) +
+  geom_vline(aes(xintercept = median(robust_df[which(robust_df$pos == pos),]$age, 
+                                     na.rm = TRUE)), linetype = "dashed") +
+  geom_vline(aes(xintercept = quantile(robust_df[which(robust_df$pos == pos),]$age, 
+                                       na.rm = TRUE, 0.99), linetype = "dashed")) +
+  labs(x="Age", y="Player Count") + 
+  facet_wrap(~pos) +
+  theme_tufte(base_size = 10, base_family = "sans", ticks = TRUE)
+```
+
+>**Points Expected Per Week in Regular Season**: 
+Prior to the draft, its important to know how many points a player can expect to 
+net the fantasy team on average that drafts him to the specific position. Experts
+provide a season points. Based on the source its not clear that if this calculates
+the playoffs but there is no way to tell at the offset which teams are likely to
+make the playoffs. So the working assumption is that the projected points are for 
+the 16 games in regular season. So the point total has been divided by 16 to generate 
+an average expected per game. To the extent that one's players are outperforming
+or meeting their expected average, we can calculate the value of the draft pick.
+
+> Dotted line below shows the 95th percentile of players. While targeting in the 
+draft, these players will be likely the first drafted. 
+
+
+```{r echo=FALSE,message=FALSE, warning=FALSE}
+ggplot(robust_df, aes(x=pointspg_w0, color=pos, fill = pos)) +
+  geom_histogram(alpha=0.6, position="identity", bins = 20) +
+  geom_vline(aes(xintercept = quantile(robust_df[which(robust_df$pos == pos),]$pointspg_w0, 
+                                     na.rm = TRUE, 0.95)), linetype = "dotted") +
+  labs(x="Average Points Projected over 16 Regular Season Games", y="Player Count") + 
+  facet_wrap(~pos) +
+  theme_tufte(base_size = 10, base_family = "sans", ticks = TRUE)
+```
+
+>**Risk Average**: Similar to Points per game, Injury/Penalty/Missed Games Risk
+per week has also been computed below at Season offset. 
+
+>The dotted line below indicates the 75th percentile of risk level per position. 
+It looks like this year the risk to RBs are less compared to the Wrs. Needs more 
+exploration because that will likely impact the choice of whether to draft WRs or 
+RBs in the early rounds of the draft. Also, it looks like QBs are expected to net
+more points per game at less risk so probably good idea to get a good QB early
+
+```{r echo=FALSE,message=FALSE, warning=FALSE}
+ggplot(robust_df, aes(x=risk_w0, color=pos, fill = pos)) +
+  geom_histogram(alpha=0.6, position="identity", bins = 20) +
+  geom_vline(aes(xintercept = quantile(robust_df[which(robust_df$pos == pos),]$risk_w0, 
+                                     na.rm = TRUE, 0.75)), linetype = "dotted") +
+  labs(x="Risk Levels to Players Expected over 16 Regular Season Games", 
+       y="Player Count") + 
+  facet_wrap(~pos) +
+  theme_tufte(base_size = 10, base_family = "sans", ticks = TRUE)
+```
+```{r}
+head(robust_df)
+```
+```{r}
+w_point_proj = subset(robust_df, team != "FA", 
+                      select = c(id, name, team, pos, 
+                                 pointspg_w0, points_w1, points_w2, points_w3))
+
+
+
+w_risk_proj = subset(robust_df, team != "FA", 
+                      select = c(id, name, team, pos, 
+                                 risk_w0, risk_w1, risk_w2, risk_w3))
+
+w_posecr_proj = subset(robust_df, team != "FA", 
+                      select = c(id, name, team, pos, 
+                                 pos_ecr_w0, pos_ecr_w1, pos_ecr_w2, pos_ecr_w3))
+
+w_floor_proj = subset(robust_df, team != "FA", 
+                      select = c(id, name, team, pos, 
+                                 floorpg_w0, floor_w1, floor_w2, floor_w3))
+
+w_ceiling_proj = subset(robust_df, team != "FA", 
+                      select = c(id, name, team, pos, 
+                                 ceilingpg_w0, ceiling_w1, ceiling_w2, ceiling_w3))
+```
+
+```{r}
+w_point_proj = melt(w_point_proj, id.vars = c("id", "name", "team", "pos"), 
+                    variable.name = "week_proj",
+                    value.name = "proj_points")
+
+w_risk_proj = melt(w_risk_proj, id.vars = c("id", "name", "team", "pos"), 
+                    variable.name = "week_risk",
+                    value.name = "proj_risk")
+
+w_posecr_proj = melt(w_posecr_proj, id.vars = c("id", "name", "team", "pos"), 
+                    variable.name = "week_ecr",
+                    value.name = "proj_ecr")
+
+w_floor_proj = melt(w_floor_proj, id.vars = c("id", "name", "team", "pos"), 
+                    variable.name = "week_floor",
+                    value.name = "proj_floor")
+
+w_ceiling_proj = melt(w_ceiling_proj, id.vars = c("id", "name", "team", "pos"), 
+                    variable.name = "week_ceiling",
+                    value.name = "proj_ceiling")
+
+```
+```{r}
+str(w_point_proj)
+```
+
+
+```{r echo=FALSE,message=FALSE, warning=FALSE}
+
+
+ggplot(data = w_point_proj) + 
+  geom_boxplot(aes(x = pos, y = proj_points, fill = pos), notch = TRUE) + 
+  facet_wrap(~week_proj) + 
+  theme_tufte(base_size = 10, base_family = "sans")
+
+
+```
+
 
 
