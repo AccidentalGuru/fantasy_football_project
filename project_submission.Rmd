@@ -1,0 +1,18 @@
+---
+title: "FF Analytics for NFL 2018 Season"
+author: "Sandeep Mohan"
+output: html_document
+---
+
+```{r}
+robust_df = read.csv("~/Desktop/GBPredictions/final_submission/fantasy_football_project/robust_ff_wide.csv")
+
+master_df = read.csv("~/Desktop/GBPredictions/final_submission/fantasy_football_project/master_ff.csv")
+```
+
+
+```{r echo=FALSE,message=FALSE, warning=FALSE}
+ggcorr(robust_ff_long)
+```
+
+
